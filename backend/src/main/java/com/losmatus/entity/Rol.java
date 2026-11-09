@@ -9,12 +9,12 @@ import lombok.Setter;
 @Getter
 @Setter
 public class Rol {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id_rol")
+    @Column(name = "id_rol", nullable = false)
     private Long idRol;
 
-    @Column(name = "nombre", length = 50, nullable = false, unique = true)
+    @Column(name = "nombre", nullable = false, length = 50, unique = true)
     private String nombre;
+
 }

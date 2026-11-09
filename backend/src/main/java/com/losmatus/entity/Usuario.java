@@ -3,34 +3,38 @@ package com.losmatus.entity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
-import java.time.LocalDateTime;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "usuarios")
 @Getter
 @Setter
 public class Usuario {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id_usuario")
+    @Column(name = "id_usuario", nullable = false)
     private Long idUsuario;
 
-    @Column(nullable = false)
+    @Column(name = "activo", nullable = false)
     private Boolean activo;
 
-    @Column(nullable = false, unique = true, length = 150)
+    @Column(name = "email", nullable = false, length = 150, unique = true)
     private String email;
 
     @Column(name = "fecha_creacion")
     private LocalDateTime fechaCreacion;
 
     @JsonIgnore
-    @Column(nullable = false, length = 255)
+    @Column(name = "password", nullable = false, length = 255)
     private String password;
 
+    @Column(name = "id_rol", nullable = false)
+    private Long idRol;
+
+    @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_rol", nullable = false)
+    @JoinColumn(name = "id_rol", referencedColumnName = "id_rol", insertable = false, updatable = false)
     private Rol rol;
+
 }
