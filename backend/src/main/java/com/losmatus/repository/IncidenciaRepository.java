@@ -2,10 +2,13 @@ package com.losmatus.repository;
 
 import com.losmatus.entity.Incidencia;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
+
+import java.util.List;
 import java.util.Optional;
 
-@Repository
 public interface IncidenciaRepository extends JpaRepository<Incidencia, Long> {
+    List<Incidencia> findByIdUsuarioReporta(Long idUsuarioReporta);
+    List<Incidencia> findByIdEstadoIncidencia(Long idEstadoIncidencia);
     Optional<Incidencia> findByCodigo(String codigo);
+    boolean existsByCodigo(String codigo);
 }

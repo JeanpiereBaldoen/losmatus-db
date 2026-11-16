@@ -1,13 +1,19 @@
 package com.losmatus.controller;
 
+import com.losmatus.config.SecurityUtils;
+import com.losmatus.dto.ActualizarUsuarioRequest;
+import com.losmatus.dto.CambiarPasswordRequest;
+import com.losmatus.dto.UsuarioDTO;
+import com.losmatus.dto.UsuarioRequest;
 import com.losmatus.entity.Usuario;
 import com.losmatus.repository.UsuarioRepository;
+import com.losmatus.service.UsuarioService;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
@@ -18,9 +24,11 @@ import java.util.List;
 public class UsuarioConsultaController {
 
     private final UsuarioRepository repositorio;
+    private final UsuarioService usuarioService;
 
-    public UsuarioConsultaController(UsuarioRepository repositorio) {
+    public UsuarioConsultaController(UsuarioRepository repositorio, UsuarioService usuarioService) {
         this.repositorio = repositorio;
+        this.usuarioService = usuarioService;
     }
 
     // No se devuelve el campo password, ni siquiera su hash.
@@ -44,5 +52,30 @@ public class UsuarioConsultaController {
         return repositorio.findById(id).map(UsuarioResumen::desde).orElseThrow(() ->
                 new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "Usuario no encontrado con ID: " + id));
+    }
+
+    @GetMapping("/perfil")
+    public ResponseEntity<UsuarioDTO> obtenerPerfil() {
+        Long idUsuarioActual = SecurityUtils.getCurrentUserId();
+        return ResponseEntity.ok(usuarioService.buscarPorId(idUsuarioActual));
+    }
+
+    @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<UsuarioDTO> crearUsuario(@Valid @RequestBody UsuarioRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(usuarioService.crearUsuario(request));
+    }
+
+    @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<UsuarioDTO> actualizarUsuario(@PathVariable Long id, @Valid @RequestBody ActualizarUsuarioRequest request) {
+        return ResponseEntity.ok(usuarioService.actualizarUsuario(id, request));
+    }
+
+    @PutMapping("/cambiar-password")
+    public ResponseEntity<Void> cambiarPassword(@Valid @RequestBody CambiarPasswordRequest request) {
+        Long idUsuarioActual = SecurityUtils.getCurrentUserId();
+        usuarioService.cambiarPassword(idUsuarioActual, request);
+        return ResponseEntity.noContent().build();
     }
 }

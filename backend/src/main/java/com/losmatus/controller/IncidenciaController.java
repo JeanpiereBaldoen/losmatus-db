@@ -3,11 +3,10 @@ package com.losmatus.controller;
 import com.losmatus.dto.IncidenciaRequest;
 import com.losmatus.entity.Incidencia;
 import com.losmatus.service.IncidenciaService;
-
 import jakarta.validation.Valid;
-
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -18,7 +17,6 @@ public class IncidenciaController {
 
     private final IncidenciaService incidenciaService;
 
-    // Constructor
     public IncidenciaController(IncidenciaService incidenciaService) {
         this.incidenciaService = incidenciaService;
     }
@@ -34,23 +32,24 @@ public class IncidenciaController {
     }
 
     @PostMapping
-    public ResponseEntity<Incidencia> crear(
-            @Valid @RequestBody IncidenciaRequest datos) {
-
+    public ResponseEntity<Incidencia> crear(@Valid @RequestBody IncidenciaRequest datos) {
         Incidencia nueva = incidenciaService.crear(datos);
-
-        return ResponseEntity
-                .status(HttpStatus.CREATED)
-                .body(nueva);
+        return ResponseEntity.status(HttpStatus.CREATED).body(nueva);
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<Incidencia> actualizar(
             @PathVariable Long id,
             @Valid @RequestBody IncidenciaRequest datos) {
-
         Incidencia actualizada = incidenciaService.actualizar(id, datos);
-
         return ResponseEntity.ok(actualizada);
+    }
+
+    @PatchMapping("/{id}/estado/{idEstado}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TECNICO')")
+    public ResponseEntity<Incidencia> cambiarEstado(
+            @PathVariable Long id,
+            @PathVariable Long idEstado) {
+        return ResponseEntity.ok(incidenciaService.cambiarEstado(id, idEstado));
     }
 }

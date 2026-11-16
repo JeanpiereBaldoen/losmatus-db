@@ -5,6 +5,7 @@ import jakarta.persistence.Id;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -19,9 +20,9 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * CRUD de desarrollo para las entidades de Los Matus.
+ * CRUD base para las entidades de Los Matus.
  * Solo copia columnas escalares; nunca modifica identificadores o relaciones JPA.
- * Poner autenticacion y autorizacion antes de publicar estos endpoints.
+ * Protegido mediante autorizaciones explicitas por rol.
  */
 public abstract class CrudBaseController<T> {
 
@@ -53,6 +54,7 @@ public abstract class CrudBaseController<T> {
 
     @PostMapping
     @Transactional
+    @PreAuthorize("hasAnyRole('ADMIN', 'TECNICO')")
     public ResponseEntity<T> crear(@RequestBody T datos) {
         T nuevo = instanciar();
         copiarColumnas(datos, nuevo);
@@ -62,6 +64,7 @@ public abstract class CrudBaseController<T> {
 
     @PutMapping("/{id}")
     @Transactional
+    @PreAuthorize("hasAnyRole('ADMIN', 'TECNICO')")
     public T actualizar(@PathVariable Long id, @RequestBody T datos) {
         T existente = encontrar(id);
         copiarColumnas(datos, existente);
@@ -71,6 +74,7 @@ public abstract class CrudBaseController<T> {
 
     @DeleteMapping("/{id}")
     @Transactional
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> eliminar(@PathVariable Long id) {
         T existente = encontrar(id);
         repositorio.delete(existente);
