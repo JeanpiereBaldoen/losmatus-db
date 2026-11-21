@@ -83,7 +83,7 @@ class AuthServiceTest {
     }
 
     @Test
-    void testLoginCompatibilidadPasswordLegacySinSobrescribir() {
+    void testLoginPasswordLegacySinHashRechazado() {
         Usuario usuarioLegacy = new Usuario();
         usuarioLegacy.setIdUsuario(101L);
         usuarioLegacy.setEmail("legacy@losmatus.com");
@@ -94,16 +94,10 @@ class AuthServiceTest {
         LoginRequest request = new LoginRequest("legacy@losmatus.com", "CUENTA_DEMOSTRACION_SIN_LOGIN");
 
         when(usuarioRepository.findByEmail("legacy@losmatus.com")).thenReturn(Optional.of(usuarioLegacy));
-        when(rolRepository.findById(3L)).thenReturn(Optional.of(rolCliente));
-        when(jwtService.generateToken(any(), eq(101L), eq("CLIENTE"))).thenReturn("token-legacy");
+        when(passwordEncoder.matches("CUENTA_DEMOSTRACION_SIN_LOGIN", "CUENTA_DEMOSTRACION_SIN_LOGIN")).thenReturn(false);
 
-        LoginResponse response = authService.login(request);
-
-        assertNotNull(response);
-        assertEquals("token-legacy", response.token());
-        // Se valida que no se sobrescriba automaticamente la base de datos
+        assertThrows(BadCredentialsException.class, () -> authService.login(request));
         verify(usuarioRepository, never()).save(any());
-        verify(passwordEncoder, never()).matches(any(), any());
     }
 
     @Test

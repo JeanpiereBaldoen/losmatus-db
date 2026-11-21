@@ -1,8 +1,8 @@
-# LOSMATUS — Backend Spring Boot 3 & Java 21
+# LOSMATUS — Backend Spring Boot 3 & Java 21 (PostgreSQL 18)
 
 API REST empresarial para la gestión integral de soporte técnico, incidencias, solicitudes de servicio, inventario de equipos y administración de usuarios para la organización **Los Matus**.
 
-Desarrollado con **Java 21**, **Spring Boot 3.3.4**, **Spring Security con JWT y BCrypt**, **Spring Data JPA**, **Hibernate (ddl-auto=validate)** y **MySQL 8**.
+Desarrollado con **Java 21**, **Spring Boot 3.3.4**, **Spring Security con JWT y BCrypt**, **Spring Data JPA**, **Hibernate (ddl-auto=validate)** y **PostgreSQL 18**.
 
 ---
 
@@ -11,14 +11,14 @@ Desarrollado con **Java 21**, **Spring Boot 3.3.4**, **Spring Security con JWT y
 - **Arquitectura Limpia en Capas**: Controladores REST, Servicios transaccionales, DTOs inmutables con Records y validaciones Jakarta, Repositorios Spring Data JPA con métodos tipados.
 - **Seguridad Robusta**:
   - Autenticación mediante tokens JWT (firmados con algoritmo HMAC-SHA256).
-  - Cifrado unidireccional de contraseñas con **BCrypt** (costo 10).
+  - Cifrado unidireccional de contraseñas estrictamente con **BCrypt** (costo 10). Se descarta autenticación en texto plano legacy.
   - Autorización basada en roles del sistema: `ADMIN`, `TECNICO`, `CLIENTE`.
   - **Aislamiento Estricto de Datos (Multi-Tenancy por Cliente)**: Los clientes solo pueden acceder a sus propias incidencias, solicitudes, chats y perfiles.
   - **Restricción de Registro**: El registro público (`/api/auth/registro`) asigna únicamente el rol `CLIENTE`. La creación de administradores y técnicos está restringida a administradores autenticados.
   - **Protección de Datos Sensibles**: Ningún endpoint expone hashes, contraseñas ni códigos OTP en las respuestas JSON.
 - **Manejo Centralizado de Excepciones**: Respuestas JSON estructuradas con formato uniforme (`ApiError`) para errores 400 (Bad Request), 401 (Unauthorized), 403 (Forbidden), 404 (Not Found), 409 (Conflict) y 500 (Internal Server Error).
-- **CORS Configurable**: Compatible con frontends en React, Angular, Vue o entornos de desarrollo mediante orígenes permitidos configurables por variable de entorno.
-- **Base de Datos Validada**: Mapeo exacto de las **47 tablas**, 272 columnas y 66 claves foráneas de MySQL sin uso de Flyway y manteniendo la integridad referencial.
+- **CORS Configurable**: Compatible con frontends en Next.js, React, Angular, Vue o entornos de desarrollo mediante orígenes permitidos configurables por variable de entorno.
+- **Base de Datos Validada**: Mapeo exacto de las **47 tablas**, 272 columnas y 66 claves foráneas en PostgreSQL 18 con tipos estándar (`IDENTITY`, `boolean`, `timestamp(6)`, `jsonb`), sin uso de Flyway/Liquibase y manteniendo Hibernate con `ddl-auto=validate`.
 
 ---
 
@@ -31,7 +31,7 @@ Desarrollado con **Java 21**, **Spring Boot 3.3.4**, **Spring Security con JWT y
 | **Spring Security** | 6.x | Control de acceso, filtros de seguridad y autorización |
 | **JJWT (io.jsonwebtoken)** | 0.12.6 | Generación y validación de tokens JWT |
 | **Spring Data JPA / Hibernate** | 6.5.3 | Persistencia con validación de esquema (`ddl-auto=validate`) |
-| **MySQL Connector/J** | 8.x | Driver JDBC para MySQL 8 |
+| **PostgreSQL JDBC Driver** | 42.7.x | Driver JDBC oficial para PostgreSQL 18 |
 | **Lombok** | 1.18.x | Reducción de código boilerplate en entidades |
 | **Jakarta Validation** | 3.x | Validación declarativa de peticiones (`@NotBlank`, `@Email`, etc.) |
 | **JUnit 5 & Mockito** | 5.10.x / 5.11.x | Pruebas unitarias y de integración completas |
@@ -44,48 +44,72 @@ El proyecto se configura mediante `src/main/resources/application.properties` y 
 
 | Variable | Descripción | Valor por Defecto |
 |---|---|---|
-| `DB_URL` | URL de conexión JDBC a MySQL | `jdbc:mysql://127.0.0.1:3306/losmatus_db?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true` |
-| `DB_USER` | Usuario de MySQL | `root` |
-| `DB_PASSWORD` | Contraseña del usuario MySQL | `100preangelo` (o variable del entorno) |
+| `DB_URL` | URL de conexión JDBC a PostgreSQL | `jdbc:postgresql://localhost:5432/losmatus_db` |
+| `DB_USER` | Usuario de PostgreSQL | `postgres` |
+| `DB_PASSWORD` | Contraseña del usuario PostgreSQL | *(Definida por variable de entorno)* |
+| `TEST_DB_URL` | URL de conexión para pruebas | `jdbc:postgresql://localhost:5432/losmatus_test_db` |
+| `TEST_DB_USER` | Usuario para pruebas | `postgres` |
 | `JPA_SHOW_SQL` | Mostrar sentencias SQL en consola | `false` |
-| `JWT_SECRET` | Clave secreta hexadecimal para firma JWT | `404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970` |
+| `JWT_SECRET` | Clave secreta hexadecimal para firma JWT (mínimo 256 bits) | *(Definida por variable de entorno)* |
 | `JWT_EXPIRATION_MS` | Tiempo de vida del token JWT en milisegundos | `86400000` (24 horas) |
 | `CORS_ALLOWED_ORIGINS` | Orígenes permitidos separados por coma | `http://localhost:3000,http://localhost:5173,http://localhost:4200` |
 
 ---
 
-## 🚀 Instrucciones de Ejecución
+## 🚀 Instrucciones de Ejecución y Migración
 
 ### 1. Prerrequisitos
 - JDK 21 instalado y configurado en `JAVA_HOME`.
 - Apache Maven 3.9+ instalado y disponible en `PATH`.
-- MySQL Server 8.0 en ejecución en el puerto 3306.
+- PostgreSQL Server 18 en ejecución en el puerto 5432.
 
-### 2. Base de Datos
-1. Crear la base de datos principal e importar el esquema y datos iniciales:
-   ```sql
-   CREATE DATABASE IF NOT EXISTS `losmatus_db` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-   ```
-2. Ejecutar `database/BD_LOSMATUS.sql` para crear las 47 tablas y registros seed.
-3. Para la base de datos independiente de pruebas automatizadas:
-   ```sql
-   CREATE DATABASE IF NOT EXISTS `losmatus_test_db` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-   ```
+### 2. Estructura y Carga de la Base de Datos
+El directorio `database/` contiene los scripts adaptados para PostgreSQL:
+- `01_estructura.sql`: Definición de las 47 tablas, tipos de datos PostgreSQL, PKs, restricciones UNIQUE, CHECKs y las 66 claves foráneas desacopladas.
+- `02_datos.sql`: Datos iniciales de demostración, configuración y sincronización de secuencias `IDENTITY`.
+- `03_verificacion.sql`: Consultas de comprobación de conteos e integridad referencial (detección de registros huérfanos).
+
+#### Creación de Bases de Datos e Importación:
+```powershell
+# 1. Crear la base principal y la base de pruebas en PostgreSQL
+psql -U postgres -h localhost -p 5432 -W -c "CREATE DATABASE losmatus_db;"
+psql -U postgres -h localhost -p 5432 -W -c "CREATE DATABASE losmatus_test_db;"
+
+# 2. Cargar estructura y datos en la base principal
+psql -U postgres -h localhost -p 5432 -d losmatus_db -W -f database/01_estructura.sql
+psql -U postgres -h localhost -p 5432 -d losmatus_db -W -f database/02_datos.sql
+
+# 3. Cargar estructura y datos en la base de pruebas
+psql -U postgres -h localhost -p 5432 -d losmatus_test_db -W -f database/01_estructura.sql
+psql -U postgres -h localhost -p 5432 -d losmatus_test_db -W -f database/02_datos.sql
+
+# 4. Verificar integridad y conteo de tablas
+psql -U postgres -h localhost -p 5432 -d losmatus_db -W -f database/03_verificacion.sql
+```
+
+#### Respaldo y Restauración (PostgreSQL):
+```powershell
+# Generar copia de seguridad (Dump)
+pg_dump -U postgres -h localhost -p 5432 -d losmatus_db -F p -f backup_losmatus_db.sql
+
+# Restaurar copia de seguridad
+psql -U postgres -h localhost -p 5432 -d losmatus_db -f backup_losmatus_db.sql
+```
 
 ### 3. Compilación y Ejecución de Pruebas
 Desde la carpeta `backend/` definiendo las variables de entorno obligatorias:
 ```powershell
-$env:DB_PASSWORD = "tu_password_mysql"
-$env:JWT_SECRET = "tu_clave_secreta_jwt_de_al_menos_256_bits"
+$env:DB_PASSWORD = "tu_password_postgres"
+$env:JWT_SECRET = "404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970"
 mvn clean test
 ```
-*Todas las pruebas unitarias y de integración se ejecutan contra la base de datos de pruebas independiente `losmatus_test_db` comprobando integridad, seguridad, autorización por roles y aislamiento de datos.*
+*Las pruebas de integración se ejecutan contra la base de datos independiente `losmatus_test_db` validando Hibernate (`ddl-auto=validate`), autorización por roles, aislamiento de clientes y contratos REST.*
 
 ### 4. Iniciar el Servidor de Desarrollo
 Desde la carpeta `backend/`:
 ```powershell
-$env:DB_PASSWORD = "tu_password_mysql"
-$env:JWT_SECRET = "tu_clave_secreta_jwt_de_al_menos_256_bits"
+$env:DB_PASSWORD = "tu_password_postgres"
+$env:JWT_SECRET = "404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970"
 mvn spring-boot:run
 ```
 El servidor iniciará en: `http://localhost:8080`

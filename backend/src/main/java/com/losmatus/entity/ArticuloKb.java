@@ -17,7 +17,7 @@ public class ArticuloKb {
     private Long id;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "estado", nullable = false, columnDefinition = "enum('ARCHIVADO','BORRADOR','PUBLICADO')")
+    @Column(name = "estado", nullable = false, length = 30)
     private Estado estado;
 
     @Column(name = "fecha_creacion")

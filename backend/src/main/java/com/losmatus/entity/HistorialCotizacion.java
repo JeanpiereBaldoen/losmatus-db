@@ -19,7 +19,7 @@ public class HistorialCotizacion {
     private Long idHistorialCotizacion;
 
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "detalles_json", columnDefinition = "json")
+    @Column(name = "detalles_json", columnDefinition = "jsonb")
     private String detallesJson;
 
     @Column(name = "fecha_generacion")

@@ -22,18 +22,18 @@ public class InformeMantenimiento {
     private String codigo;
 
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "datos_dinamicos", columnDefinition = "json")
+    @Column(name = "datos_dinamicos", columnDefinition = "jsonb")
     private String datosDinamicos;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "estado", columnDefinition = "enum('BORRADOR','FINALIZADO')")
+    @Column(name = "estado", length = 30)
     private Estado estado;
 
     @Column(name = "fecha_ejecucion")
     private LocalDateTime fechaEjecucion;
 
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "fotos_url", columnDefinition = "json")
+    @Column(name = "fotos_url", columnDefinition = "jsonb")
     private String fotosUrl;
 
     @Column(name = "id_equipo")

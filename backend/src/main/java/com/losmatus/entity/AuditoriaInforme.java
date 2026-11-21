@@ -21,11 +21,11 @@ public class AuditoriaInforme {
     private String accion;
 
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "datos_anteriores", columnDefinition = "json")
+    @Column(name = "datos_anteriores", columnDefinition = "jsonb")
     private String datosAnteriores;
 
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "datos_nuevos", columnDefinition = "json")
+    @Column(name = "datos_nuevos", columnDefinition = "jsonb")
     private String datosNuevos;
 
     @Column(name = "fecha_cambio")

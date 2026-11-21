@@ -30,7 +30,7 @@ public class OtpCode {
     private Long idUsuario;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "type", nullable = false, columnDefinition = "enum('LOGIN','PASSWORD_CHANGE','PASSWORD_RESET')")
+    @Column(name = "type", nullable = false, length = 30)
     private Type type;
 
     @JsonIgnore

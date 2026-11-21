@@ -1,3 +1,13 @@
+-- =============================================================================
+-- RESPALDO HISTÓRICO ORIGINAL: MySQL 8 (LOSMATUS SAC)
+-- ARCHIVO: BD_LOSMATUS.sql
+-- NOTA: Este archivo se conserva exclusivamente como respaldo histórico de la versión
+-- previa en MySQL 8. Para el despliegue activo en PostgreSQL 18, utilizar:
+--   - database/01_estructura.sql
+--   - database/02_datos.sql
+--   - database/03_verificacion.sql
+-- =============================================================================
+
 CREATE DATABASE IF NOT EXISTS `losmatus_db`
 USE `losmatus_db`;
 

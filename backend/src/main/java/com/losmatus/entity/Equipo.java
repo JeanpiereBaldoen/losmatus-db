@@ -20,7 +20,7 @@ public class Equipo {
     private String codigoInventario;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "estado", columnDefinition = "enum('OPERATIVO','EN_MANTENIMIENTO','INOPERATIVO','DE_BAJA')")
+    @Column(name = "estado", length = 30)
     private Estado estado;
 
     @Column(name = "fecha_adquisicion")

@@ -56,12 +56,7 @@ public class AuthService {
         boolean passwordValido = false;
         String storedPassword = usuario.getPassword();
         if (storedPassword != null) {
-            if (storedPassword.startsWith("$2a$") || storedPassword.startsWith("$2b$") || storedPassword.startsWith("$2y$")) {
-                passwordValido = passwordEncoder.matches(request.password(), storedPassword);
-            } else {
-                // Compatibilidad con contraseñas existentes legacy sin sobrescribir datos automáticamente
-                passwordValido = storedPassword.equals(request.password());
-            }
+            passwordValido = passwordEncoder.matches(request.password(), storedPassword);
         }
 
         if (!passwordValido) {

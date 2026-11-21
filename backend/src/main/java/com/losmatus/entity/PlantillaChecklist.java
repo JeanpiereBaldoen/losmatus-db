@@ -17,7 +17,7 @@ public class PlantillaChecklist {
     private Long id;
 
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "estructura", columnDefinition = "json")
+    @Column(name = "estructura", columnDefinition = "jsonb")
     private String estructura;
 
     @Column(name = "nombre", length = 255)
