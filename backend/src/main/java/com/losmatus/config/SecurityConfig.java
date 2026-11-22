@@ -77,8 +77,10 @@ public class SecurityConfig {
                         // Preflight requests CORS
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
-                        // Endpoints publicos de autenticacion
+                        // Endpoints publicos de autenticacion y contacto
                         .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/solicitudes-servicio/contacto-publico").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/articulos-kb/publicados").permitAll()
 
                         // Gestion exclusiva de Administradores (recursos criticos y auditoria)
                         .requestMatchers("/api/admins/**", "/api/auditoria-informes/**", "/api/niveles-admin/**").hasRole("ADMIN")

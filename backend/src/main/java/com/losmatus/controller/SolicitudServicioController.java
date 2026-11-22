@@ -36,6 +36,11 @@ public class SolicitudServicioController {
         return ResponseEntity.status(HttpStatus.CREATED).body(service.crear(request));
     }
 
+    @PostMapping("/contacto-publico")
+    public ResponseEntity<SolicitudServicio> contactoPublico(@Valid @RequestBody com.losmatus.dto.ContactoPublicoRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(service.crearContactoPublico(request));
+    }
+
     @PutMapping("/{id}")
     public ResponseEntity<SolicitudServicio> actualizar(@PathVariable Long id, @Valid @RequestBody SolicitudServicioRequest request) {
         return ResponseEntity.ok(service.actualizar(id, request));

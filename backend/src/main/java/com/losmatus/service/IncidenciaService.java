@@ -26,8 +26,7 @@ public class IncidenciaService {
     public IncidenciaService(
             IncidenciaRepository incidenciaRepository,
             HistorialIncidenciaRepository historialIncidenciaRepository,
-            ConfiguracionSlaRepository configuracionSlaRepository
-    ) {
+            ConfiguracionSlaRepository configuracionSlaRepository) {
         this.incidenciaRepository = incidenciaRepository;
         this.historialIncidenciaRepository = historialIncidenciaRepository;
         this.configuracionSlaRepository = configuracionSlaRepository;
@@ -57,17 +56,25 @@ public class IncidenciaService {
     public Incidencia crear(IncidenciaRequest datos) {
         Incidencia incidencia = new Incidencia();
 
-        incidencia.setCodigo(datos.codigo().trim());
+        if (datos.codigo() != null && !datos.codigo().isBlank()) {
+            incidencia.setCodigo(datos.codigo().trim());
+        } else {
+            incidencia.setCodigo("INC-" + (System.currentTimeMillis() % 10000000));
+        }
         incidencia.setDescripcion(datos.descripcion().trim());
         incidencia.setIdCategoria(datos.idCategoria());
-        incidencia.setIdEstadoIncidencia(datos.idEstadoIncidencia());
+        incidencia.setIdEstadoIncidencia(
+                SecurityUtils.isCliente()
+                        ? 1L
+                        : (datos.idEstadoIncidencia() != null ? datos.idEstadoIncidencia() : 1L));
         incidencia.setIdSeveridad(datos.idSeveridad());
 
         // Si es CLIENTE, reporta a su propio nombre obligatoriamente
         if (SecurityUtils.isCliente()) {
             incidencia.setIdUsuarioReporta(SecurityUtils.getCurrentUserId());
         } else {
-            incidencia.setIdUsuarioReporta(datos.idUsuarioReporta() != null ? datos.idUsuarioReporta() : SecurityUtils.getCurrentUserId());
+            incidencia.setIdUsuarioReporta(
+                    datos.idUsuarioReporta() != null ? datos.idUsuarioReporta() : SecurityUtils.getCurrentUserId());
         }
 
         LocalDateTime ahora = LocalDateTime.now();
@@ -75,7 +82,8 @@ public class IncidenciaService {
 
         // Calcular SLA si existe configuracion para la severidad
         if (datos.idSeveridad() != null) {
-            configuracionSlaRepository.findByIdUsuarioAndIdSeveridad(incidencia.getIdUsuarioReporta(), datos.idSeveridad())
+            configuracionSlaRepository
+                    .findByIdUsuarioAndIdSeveridad(incidencia.getIdUsuarioReporta(), datos.idSeveridad())
                     .ifPresent(sla -> {
                         if (sla.getTiempoResolucionHoras() > 0) {
                             incidencia.setFechaLimiteResolucion(ahora.plusHours(sla.getTiempoResolucionHoras()));
@@ -86,7 +94,8 @@ public class IncidenciaService {
         Incidencia guardada = incidenciaRepository.save(incidencia);
 
         // Registrar primer estado en el historial
-        registrarHistorial(guardada.getIdIncidencia(), guardada.getIdEstadoIncidencia(), guardada.getIdUsuarioReporta());
+        registrarHistorial(guardada.getIdIncidencia(), guardada.getIdEstadoIncidencia(),
+                guardada.getIdUsuarioReporta());
 
         return guardada;
     }
@@ -95,10 +104,16 @@ public class IncidenciaService {
     @Transactional
     public Incidencia actualizar(Long id, IncidenciaRequest datos) {
         Incidencia incidencia = buscarPorId(id);
+        if (SecurityUtils.isCliente()) {
+            throw new ForbiddenException(
+                    "Los clientes no pueden actualizar incidencias existentes");
+        }
 
         Long estadoAnterior = incidencia.getIdEstadoIncidencia();
 
-        incidencia.setCodigo(datos.codigo().trim());
+        if (datos.codigo() != null && !datos.codigo().isBlank()) {
+            incidencia.setCodigo(datos.codigo().trim());
+        }
         incidencia.setDescripcion(datos.descripcion().trim());
         incidencia.setIdCategoria(datos.idCategoria());
         incidencia.setIdSeveridad(datos.idSeveridad());
@@ -113,7 +128,8 @@ public class IncidenciaService {
         // Si cambio el estado, registrar en historial
         if (datos.idEstadoIncidencia() != null && !datos.idEstadoIncidencia().equals(estadoAnterior)) {
             incidencia.setIdEstadoIncidencia(datos.idEstadoIncidencia());
-            registrarHistorial(incidencia.getIdIncidencia(), datos.idEstadoIncidencia(), SecurityUtils.getCurrentUserId());
+            registrarHistorial(incidencia.getIdIncidencia(), datos.idEstadoIncidencia(),
+                    SecurityUtils.getCurrentUserId());
 
             // Si es resuelta (ID 3 = Resuelta en seed data), fijar fecha finalizacion
             if (datos.idEstadoIncidencia() == 3L) {

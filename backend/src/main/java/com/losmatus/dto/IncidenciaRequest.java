@@ -6,18 +6,17 @@ import jakarta.validation.constraints.Size;
 
 public record IncidenciaRequest(
 
-        @NotBlank @Size(max = 20) String codigo,
+        @Size(max = 20) String codigo,
 
         @NotBlank String descripcion,
 
         @NotNull Long idCategoria,
 
-        @NotNull Long idEstadoIncidencia,
+        Long idEstadoIncidencia,
 
         @NotNull Long idSeveridad,
 
-        @NotNull Long idUsuarioReporta
-        
+        Long idUsuarioReporta
 
 ) {
 }

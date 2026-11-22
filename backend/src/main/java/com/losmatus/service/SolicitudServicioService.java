@@ -1,6 +1,7 @@
 package com.losmatus.service;
 
 import com.losmatus.config.SecurityUtils;
+import com.losmatus.dto.ContactoPublicoRequest;
 import com.losmatus.dto.SolicitudServicioRequest;
 import com.losmatus.entity.HistorialSolicitudServicio;
 import com.losmatus.entity.SolicitudServicio;
@@ -8,6 +9,7 @@ import com.losmatus.exception.ForbiddenException;
 import com.losmatus.exception.ResourceNotFoundException;
 import com.losmatus.repository.HistorialSolicitudServicioRepository;
 import com.losmatus.repository.SolicitudServicioRepository;
+import com.losmatus.repository.UsuarioRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,13 +22,16 @@ public class SolicitudServicioService {
 
     private final SolicitudServicioRepository repo;
     private final HistorialSolicitudServicioRepository historialRepo;
+    private final UsuarioRepository usuarioRepository;
 
     public SolicitudServicioService(
             SolicitudServicioRepository repo,
-            HistorialSolicitudServicioRepository historialRepo
+            HistorialSolicitudServicioRepository historialRepo,
+            UsuarioRepository usuarioRepository
     ) {
         this.repo = repo;
         this.historialRepo = historialRepo;
+        this.usuarioRepository = usuarioRepository;
     }
 
     @Transactional(readOnly = true)
@@ -74,6 +79,62 @@ public class SolicitudServicioService {
 
         // Registrar primer historial
         registrarHistorial(guardada.getIdSolicitud(), guardada.getIdEstado(), guardada.getIdSeveridad(), "Creacion de solicitud", guardada.getIdUsuario());
+
+        return guardada;
+    }
+
+    @Transactional
+    public SolicitudServicio crearContactoPublico(ContactoPublicoRequest req) {
+        SolicitudServicio solicitud = new SolicitudServicio();
+
+        int anio = Year.now().getValue();
+        int correlativo = repo.findMaxCorrelativoByAnio(anio).orElse(0) + 1;
+        String codigo = String.format("SOL-%d-%04d", anio, correlativo);
+
+        solicitud.setAnio(anio);
+        solicitud.setCorrelativo(correlativo);
+        solicitud.setCodigo(codigo);
+
+        StringBuilder desc = new StringBuilder();
+        desc.append("[CONTACTO WEB COMERCIAL]\n");
+        desc.append("Nombre: ").append(req.nombre() != null ? req.nombre().trim() : "").append("\n");
+        desc.append("Correo: ").append(req.correo() != null ? req.correo().trim() : "").append("\n");
+        if (req.empresa() != null && !req.empresa().isBlank()) {
+            desc.append("Empresa: ").append(req.empresa().trim()).append("\n");
+        }
+        if (req.telefono() != null && !req.telefono().isBlank()) {
+            desc.append("Teléfono: ").append(req.telefono().trim()).append("\n");
+        }
+        if (req.servicioInteres() != null && !req.servicioInteres().isBlank()) {
+            desc.append("Servicio de interés: ").append(req.servicioInteres().trim()).append("\n");
+        }
+        desc.append("Detalle:\n").append(req.mensaje() != null ? req.mensaje().trim() : "");
+        solicitud.setDescripcion(desc.toString());
+
+        // Mapear servicio de interés a tipo_servicio existente (1=Mantenimiento, 2=Instalación, 3=Soporte técnico)
+        Long tipoServicioId = 2L;
+        if (req.servicioInteres() != null) {
+            String s = req.servicioInteres().toLowerCase();
+            if (s.contains("mantenimiento")) {
+                tipoServicioId = 1L;
+            } else if (s.contains("soporte") || s.contains("helpdesk") || s.contains("mesa")) {
+                tipoServicioId = 3L;
+            }
+        }
+        solicitud.setIdTipoServicio(tipoServicioId);
+        solicitud.setIdSeveridad(2L); // Severidad Media
+        solicitud.setIdEstado(1L); // Estado Pendiente
+        solicitud.setRequiereCotizacion(true);
+        solicitud.setFechaSolicitud(LocalDateTime.now());
+
+        // Asignar idUsuario si existe un usuario con ese correo o usar el usuario administrativo (1L)
+        Long idUsuario = usuarioRepository.findByEmail(req.correo().trim().toLowerCase())
+                .map(u -> u.getIdUsuario())
+                .orElse(1L);
+        solicitud.setIdUsuario(idUsuario);
+
+        SolicitudServicio guardada = repo.save(solicitud);
+        registrarHistorial(guardada.getIdSolicitud(), guardada.getIdEstado(), guardada.getIdSeveridad(), "Solicitud registrada desde formulario web comercial", idUsuario);
 
         return guardada;
     }

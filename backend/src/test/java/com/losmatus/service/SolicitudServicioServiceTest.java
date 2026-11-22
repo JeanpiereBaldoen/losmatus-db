@@ -36,6 +36,9 @@ class SolicitudServicioServiceTest {
     @Mock
     private HistorialSolicitudServicioRepository historialRepo;
 
+    @Mock
+    private com.losmatus.repository.UsuarioRepository usuarioRepo;
+
     @InjectMocks
     private SolicitudServicioService service;
 
@@ -113,6 +116,38 @@ class SolicitudServicioServiceTest {
         assertEquals(anio, guardada.getAnio());
         assertEquals(String.format("SOL-%d-0016", anio), guardada.getCodigo());
         assertEquals(7L, guardada.getIdUsuario()); // Asignado al cliente autenticado
+        verify(historialRepo, times(1)).save(any(HistorialSolicitudServicio.class));
+    }
+
+    @Test
+    void testCrearContactoPublicoExitoso() {
+        int anio = Year.now().getValue();
+        com.losmatus.dto.ContactoPublicoRequest request = new com.losmatus.dto.ContactoPublicoRequest(
+                "Carlos Mendoza",
+                "carlos@innovatech.pe",
+                "Innova Tech SAC",
+                "999888777",
+                "Cableado Estructurado",
+                "Requerimos cotización de 40 puntos de red"
+        );
+
+        when(repo.findMaxCorrelativoByAnio(anio)).thenReturn(Optional.of(3));
+        when(usuarioRepo.findByEmail("carlos@innovatech.pe")).thenReturn(Optional.empty());
+        when(repo.save(any(SolicitudServicio.class))).thenAnswer(i -> {
+            SolicitudServicio s = i.getArgument(0);
+            s.setIdSolicitud(99L);
+            return s;
+        });
+
+        SolicitudServicio guardada = service.crearContactoPublico(request);
+
+        assertNotNull(guardada);
+        assertEquals(4, guardada.getCorrelativo());
+        assertEquals(String.format("SOL-%d-0004", anio), guardada.getCodigo());
+        assertEquals(1L, guardada.getIdUsuario()); // Usuario default admin
+        assertTrue(guardada.getRequiereCotizacion());
+        assertTrue(guardada.getDescripcion().contains("Carlos Mendoza"));
+        assertTrue(guardada.getDescripcion().contains("Innova Tech SAC"));
         verify(historialRepo, times(1)).save(any(HistorialSolicitudServicio.class));
     }
 }
